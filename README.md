@@ -6,7 +6,7 @@ Just because something is not working does not mean that there should not be alt
 
 ### Objective
 
-- Webhook log shipment to HEC log collector over HTTPS using an API Gateway
+- Ship Webhook logs to the HEC collector over HTTPS using API Gateway as a broker.
 
 ### Quick Stack
 
