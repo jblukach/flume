@@ -22,14 +22,21 @@ class FlumeStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        apigatewayname = cdk.CfnParameter(
+            self,
+            'apigatewayname',
+            default = 'flume',
+            type = 'String',
+            description = 'Provide API Gateway Name'
+        )
+
     ### SECRET MANAGER ###
 
         secret = _secretsmanager.Secret(
             self, 'secret',
-            secret_object_value={
+            secret_object_value = {
                 "url": SecretValue.unsafe_plain_text('<URL>'),
-                "token": SecretValue.unsafe_plain_text('<TOKEN>'),
-                "sourcetype": SecretValue.unsafe_plain_text('<SOURCETYPE>')
+                "token": SecretValue.unsafe_plain_text('<TOKEN>')
             },
             removal_policy = RemovalPolicy.DESTROY
         )
@@ -88,7 +95,7 @@ class FlumeStack(Stack):
 
         api = _api.RestApi(
             self, 'api',
-            rest_api_name = 'flume',
+            rest_api_name = apigatewayname.value_as_string,
             endpoint_types = [_api.EndpointType.REGIONAL],
             deploy_options = _api.StageOptions(
                 access_log_destination = _api.LogGroupLogDestination(apilogs),
@@ -146,7 +153,6 @@ FlumeStack(
     )
 )
 
-cdk.Tags.of(app).add('Alias','4n6ir.com')
 cdk.Tags.of(app).add('GitHub','https://github.com/jblukach/flume')
 
 app.synth()
