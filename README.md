@@ -15,7 +15,7 @@ What happens when Infrastructure as Code (IaC) is all written in a specific tech
 5. Existing S3 Bucket Name
 6. Add Tags
 7. Deploy CloudFormation
-8. Update Verify
+8. Change Verify Token
 
 ### Broker URL
 
