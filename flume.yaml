@@ -3,16 +3,11 @@ Parameters:
     Type: String
     Default: flume
     Description: Provide API Gateway Name
+  s3bucketname:
+    Type: String
+    Default: flume
+    Description: Existing S3 Bucket Name
 Resources:
-  secret4DA88516:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      SecretString: '{"url":"<URL>","token":"<TOKEN>"}'
-      Tags:
-        - Key: GitHub
-          Value: https://github.com/jblukach/flume
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
   roleC7B7E775:
     Type: AWS::IAM::Role
     Properties:
@@ -37,16 +32,40 @@ Resources:
     Properties:
       PolicyDocument:
         Statement:
-          - Action:
-              - secretsmanager:DescribeSecret
-              - secretsmanager:GetSecretValue
+          - Action: s3:PutObject
             Effect: Allow
             Resource:
-              Ref: secret4DA88516
+              Fn::Join:
+                - ""
+                - - "arn:aws:s3:::"
+                  - Ref: s3bucketname
+                  - /*
+          - Action: apigateway:POST
+            Effect: Allow
+            Resource: "*"
         Version: "2012-10-17"
       PolicyName: roleDefaultPolicy7C980EBA
       Roles:
         - Ref: roleC7B7E775
+  apirole85D7B7F5:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+        - Key: GitHub
+          Value: https://github.com/jblukach/flume
   flume9B71057B:
     Type: AWS::Lambda::Function
     Properties:
@@ -56,60 +75,43 @@ Resources:
         ZipFile: |-
           import boto3
           import datetime
+          import gzip
           import json
           import os
-          from botocore.vendored import requests
+          import uuid
 
           def handler(event, context):
 
               print(event)
-              #print(type(event))
 
-              epoch = datetime.datetime.now(datetime.timezone.utc).timestamp()
+              uniq = str(uuid.uuid4())
 
-              payload = {}
-              payload['time'] = epoch                         # @timestamp
-              #payload['timezone'] = 'Z'                      # @timezone
-              #payload['index'] = 'Connector Name'            #repo
-              #payload['sourcetype'] = 'Parser Name'          #type    
-              #payload['source'] = 'Log Location'             # @source
-              #payload['host'] = 'Origin Host'                # @host
-              payload['event'] = event['body']                # @rawstring
-              #payload['fields'] = {"#key":"value"}           #tags
-              
-              #print(payload)
-              #print(type(payload))
+              with gzip.open('/tmp/'+uniq+'.json.gz', 'wb') as g:
+                  g.write((str(event)+str('\n')).encode())
+              g.close()
 
-              secretmgr = boto3.client('secretsmanager')
+              year = datetime.datetime.now().year
+              month = datetime.datetime.now().month
+              day = datetime.datetime.now().day
+              hour = datetime.datetime.now().hour
 
-              secret = secretmgr.get_secret_value(
-                  SecretId = os.environ['SECRET_MGR']
-              )
+              s3 = boto3.client('s3')
 
-              hec = json.loads(secret['SecretString'])
+              bucket = os.environ['BUCKET']
+              prefix = os.environ['PREFIX']
+              key = f'{prefix}/year={year}/month={month}/day={day}/hour={hour}/{uniq}.json.gz'
 
-              headers = {
-                  'Authorization': 'Bearer '+hec['token'],
-                  'Content-Type': 'application/json'
-              }
-
-              r = requests.post(
-                  hec['url'],
-                  headers = headers,
-                  data = payload
-              )
-
-              print(r.json())
-              #print(r.status_code)
+              s3.upload_file('/tmp/'+uniq+'.json.gz', bucket, key)
 
               return {
                   'statusCode': 200,
-                  'body': json.dumps('Log Shipped!')
+                  'body': json.dumps('Shipped: '+key)
               }
       Environment:
         Variables:
-          SECRET_MGR:
-            Ref: secret4DA88516
+          BUCKET:
+            Ref: s3bucketname
+          PREFIX: logs
       Handler: index.handler
       MemorySize: 128
       Role:
@@ -170,12 +172,6 @@ Resources:
   apiDeploymentStageprod896C8101:
     Type: AWS::ApiGateway::Stage
     Properties:
-      AccessLogSetting:
-        DestinationArn:
-          Fn::GetAtt:
-            - apilogs9C0A78C8
-            - Arn
-        Format: $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
       DeploymentId:
         Ref: apiDeployment149F129487cdf7c624a1ffa559a8eeb5bb4e2d4f
       MethodSettings:

@@ -1,52 +1,34 @@
 import boto3
 import datetime
+import gzip
 import json
 import os
-from botocore.vendored import requests
+import uuid
 
 def handler(event, context):
 
     print(event)
-    #print(type(event))
 
-    epoch = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    uniq = str(uuid.uuid4())
 
-    payload = {}
-    payload['time'] = epoch                         # @timestamp
-    #payload['timezone'] = 'Z'                      # @timezone
-    #payload['index'] = 'Connector Name'            #repo
-    #payload['sourcetype'] = 'Parser Name'          #type    
-    #payload['source'] = 'Log Location'             # @source
-    #payload['host'] = 'Origin Host'                # @host
-    payload['event'] = event['body']                # @rawstring
-    #payload['fields'] = {"#key":"value"}           #tags
-    
-    #print(payload)
-    #print(type(payload))
+    with gzip.open('/tmp/'+uniq+'.json.gz', 'wb') as g:
+        g.write((str(event)+str('\n')).encode())
+    g.close()
 
-    secretmgr = boto3.client('secretsmanager')
+    year = datetime.datetime.now().year
+    month = datetime.datetime.now().month
+    day = datetime.datetime.now().day
+    hour = datetime.datetime.now().hour
 
-    secret = secretmgr.get_secret_value(
-        SecretId = os.environ['SECRET_MGR']
-    )
+    s3 = boto3.client('s3')
 
-    hec = json.loads(secret['SecretString'])
+    bucket = os.environ['BUCKET']
+    prefix = os.environ['PREFIX']
+    key = f'{prefix}/year={year}/month={month}/day={day}/hour={hour}/{uniq}.json.gz'
 
-    headers = {
-        'Authorization': 'Bearer '+hec['token'],
-        'Content-Type': 'application/json'
-    }
-
-    r = requests.post(
-        hec['url'],
-        headers = headers,
-        data = payload
-    )
-
-    print(r.json())
-    #print(r.status_code)
+    s3.upload_file('/tmp/'+uniq+'.json.gz', bucket, key)
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Log Shipped!')
+        'body': json.dumps('Shipped: '+key)
     }

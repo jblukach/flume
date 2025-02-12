@@ -5,10 +5,12 @@ headers = {
 }
 
 data = {}
-data['flume'] = 'log shipment test'
+data['one'] = 'MISSISSIPPI'
+data['two'] = 'MISSISSIPPI'
+data['three'] = 'MISSISSIPPI'
 
 r = requests.post(
-    'https://2kntqoktkg.execute-api.us-east-2.amazonaws.com/prod/ingest',
+    'https://u5v9xs6baj.execute-api.us-east-1.amazonaws.com/prod/ingest',
     headers = headers,
     data = data
 )

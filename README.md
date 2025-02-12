@@ -1,12 +1,10 @@
 # flume
 
-Write everything as Infrastructure as Code (IaC) in a specific technology; what happens when the pipeline is unavailable and security teams can not continuously improve and deploy (CI/CD) to environments?
-
-Just because something is not working does not mean that there should not be alternative options for incident response. Cloud Development Kit (CDK) generates a standalone CloudFormation stack for quick deployment.
+What happens when Infrastructure as Code (IaC) is all written in a specific technology, but the pipeline is unavailable for deployments? Security teams do not have a choice requiring an alternative option to contain cloud environments. Enter Cloud Development Kit (CDK), which can generate a stand-alone CloudFormation stack for quick deployment.  
 
 ### Objective
 
-- Ship Webhook logs to the HEC collector over HTTPS using API Gateway as a broker.
+- Ship Webhook logs to an S3 bucket with an API Gateway broker.
 
 ### Quick Stack
 
@@ -14,10 +12,9 @@ Just because something is not working does not mean that there should not be alt
 2. Create Stack
 3. Stack Name
 4. API Gateway Name
-5. Add Tags
-6. Deploy CloudFormation
-7. Update Secret for HEC Information
-8. Configure Webhook Destination
+5. Existing S3 Bucket Name
+6. Add Tags
+7. Deploy CloudFormation
 
 ### CloudFormation
 
@@ -33,8 +30,3 @@ Delete from the ```Parameters:``` section of the ```flume.yaml``` file.
     Default: /cdk-bootstrap/4n6ir/version
     Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 ```
-
-### References
-
-- https://docs.splunk.com/Documentation/SplunkCloud/latest/Data/FormateventsforHTTPEventCollector
-- https://library.humio.com/logscale-api/log-shippers-hec.html

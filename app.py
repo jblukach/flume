@@ -6,13 +6,12 @@ import aws_cdk as cdk
 from aws_cdk import (
     Duration,
     RemovalPolicy,
-    SecretValue,
     Stack,
     aws_apigateway as _api,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
-    aws_secretsmanager as _secretsmanager
+    aws_s3 as _s3
 )
 
 from constructs import Construct
@@ -30,15 +29,19 @@ class FlumeStack(Stack):
             description = 'Provide API Gateway Name'
         )
 
-    ### SECRET MANAGER ###
+        s3bucketname = cdk.CfnParameter(
+            self,
+            's3bucketname',
+            default = 'flume',
+            type = 'String',
+            description = 'Existing S3 Bucket Name'
+        )
 
-        secret = _secretsmanager.Secret(
-            self, 'secret',
-            secret_object_value = {
-                "url": SecretValue.unsafe_plain_text('<URL>'),
-                "token": SecretValue.unsafe_plain_text('<TOKEN>')
-            },
-            removal_policy = RemovalPolicy.DESTROY
+    ### S3 BUCKET ###
+
+        bucket = _s3.Bucket.from_bucket_name(
+            self, 'bucket',
+            bucket_name = s3bucketname.value_as_string
         )
 
     ### IAM ROLE ###
@@ -56,7 +59,40 @@ class FlumeStack(Stack):
             )
         )
 
-        secret.grant_read(role)
+        role.add_to_policy(
+            _iam.PolicyStatement(
+                actions = [
+                    's3:PutObject'
+                ],
+                resources = [
+                    bucket.arn_for_objects('*')
+                ]
+            )
+        )
+
+        role.add_to_policy(
+            _iam.PolicyStatement(
+                actions = [
+                    'apigateway:POST'
+                ],
+                resources = [
+                    '*'
+                ]
+            )
+        )
+
+        apirole = _iam.Role(
+            self, 'apirole', 
+            assumed_by = _iam.ServicePrincipal(
+                'apigateway.amazonaws.com'
+            )
+        )
+
+        apirole.add_managed_policy(
+            _iam.ManagedPolicy.from_aws_managed_policy_name(
+                'service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+            )
+        )
 
     ### LAMBDA FUNCTION ####
 
@@ -72,7 +108,8 @@ class FlumeStack(Stack):
             architecture = _lambda.Architecture.ARM_64,
             timeout = Duration.seconds(30),
             environment = dict(
-                SECRET_MGR = secret.secret_arn
+                BUCKET = bucket.bucket_name,
+                PREFIX = 'logs'
             ),
             memory_size = 128,
             role = role
@@ -98,8 +135,6 @@ class FlumeStack(Stack):
             rest_api_name = apigatewayname.value_as_string,
             endpoint_types = [_api.EndpointType.REGIONAL],
             deploy_options = _api.StageOptions(
-                access_log_destination = _api.LogGroupLogDestination(apilogs),
-                access_log_format = _api.AccessLogFormat.clf(),
                 method_options={
                     '/*/*': _api.MethodDeploymentOptions(
                         throttling_rate_limit = 10000,
