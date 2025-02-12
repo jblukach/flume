@@ -6,12 +6,14 @@ import aws_cdk as cdk
 from aws_cdk import (
     Duration,
     RemovalPolicy,
+    SecretValue,
     Stack,
     aws_apigateway as _api,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
-    aws_s3 as _s3
+    aws_s3 as _s3,
+    aws_secretsmanager as _secretsmanager
 )
 
 from constructs import Construct
@@ -42,6 +44,16 @@ class FlumeStack(Stack):
         bucket = _s3.Bucket.from_bucket_name(
             self, 'bucket',
             bucket_name = s3bucketname.value_as_string
+        )
+
+    ### SECRET MANAGER ###
+
+        secret = _secretsmanager.Secret(
+            self, 'secret',
+            secret_object_value = {
+                "verify": SecretValue.unsafe_plain_text('<VERIFY>')
+            },
+            removal_policy = RemovalPolicy.DESTROY
         )
 
     ### IAM ROLE ###
@@ -81,6 +93,10 @@ class FlumeStack(Stack):
             )
         )
 
+        secret.grant_read(role)
+
+    ### API LOG ROLE ###
+
         apirole = _iam.Role(
             self, 'apirole', 
             assumed_by = _iam.ServicePrincipal(
@@ -109,7 +125,8 @@ class FlumeStack(Stack):
             timeout = Duration.seconds(30),
             environment = dict(
                 BUCKET = bucket.bucket_name,
-                PREFIX = 'logs'
+                PREFIX = 'logs',
+                SECRET = secret.secret_arn
             ),
             memory_size = 128,
             role = role

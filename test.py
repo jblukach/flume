@@ -1,3 +1,4 @@
+import json
 import requests
 
 headers = {
@@ -10,10 +11,10 @@ data['two'] = 'MISSISSIPPI'
 data['three'] = 'MISSISSIPPI'
 
 r = requests.post(
-    'https://u5v9xs6baj.execute-api.us-east-1.amazonaws.com/prod/ingest',
+    'https://jm782ict1g.execute-api.us-east-1.amazonaws.com/prod/ingest?verify=<VERIFY>',
     headers = headers,
     data = data
 )
 
-print(r.json())
 print(r.status_code)
+print(json.dumps(r.json(), indent=4))
