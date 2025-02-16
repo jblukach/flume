@@ -9,13 +9,14 @@ What happens when Infrastructure as Code (IaC) is all written in a specific tech
 ### Quick Stack
 
 1. Download ```flume.yaml```
-2. Create Stack
-3. Stack Name
-4. API Gateway Name
-5. Existing S3 Bucket Name
-6. Add Tags
-7. Deploy CloudFormation
-8. Change Verify Token
+2. Check Regions [1](https://github.com/jblukach/flume/blob/05b2a09231def1b215e5023d9eefa3d36762c278/flume.yaml#L253C36-L253C45) [2](https://github.com/jblukach/flume/blob/05b2a09231def1b215e5023d9eefa3d36762c278/flume.yaml#L272C36-L272C45) [3](https://github.com/jblukach/flume/blob/05b2a09231def1b215e5023d9eefa3d36762c278/flume.yaml#L293C36-L293C45) [4](https://github.com/jblukach/flume/blob/05b2a09231def1b215e5023d9eefa3d36762c278/flume.yaml#L313C26-L313C35)
+3. Create Stack
+4. Stack Name
+5. API Gateway Name
+6. Existing S3 Bucket Name
+7. Add Tags
+8. Deploy CloudFormation
+9. Change Verify Token
 
 ### Broker URL
 
