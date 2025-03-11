@@ -9,7 +9,7 @@ What happens when Infrastructure as Code (IaC) is all written in a specific tech
 ### Quick Stack
 
 1. Download ```flume.yaml```
-2. [Check Region](https://github.com/jblukach/flume/blob/main/flume.yaml#L200C36-L200C45)
+2. [Check Region](https://github.com/jblukach/flume/blob/main/flume.yaml#L205C36-L205C45)
 3. Create Stack
 4. Stack Name
 5. API Gateway Name
