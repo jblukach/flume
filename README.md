@@ -21,7 +21,7 @@ What happens when Infrastructure as Code (IaC) is all written in a specific tech
 ### Broker URL
 
 ```
-https://jm782ict1g.execute-api.us-east-1.amazonaws.com/prod/ingest?verify=<VERIFY>
+https://3ta9vobuad.execute-api.us-east-1.amazonaws.com/logs?verify=<VERIFY>
 ```
 
 ### CloudFormation

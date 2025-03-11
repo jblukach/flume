@@ -11,7 +11,7 @@ data['two'] = 'MISSISSIPPI'
 data['three'] = 'MISSISSIPPI'
 
 r = requests.post(
-    'https://jm782ict1g.execute-api.us-east-1.amazonaws.com/prod/ingest?verify=<VERIFY>',
+    'https://3ta9vobuad.execute-api.us-east-1.amazonaws.com/logs?verify=<VERIFY>',
     headers = headers,
     data = data
 )

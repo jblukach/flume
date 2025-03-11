@@ -6,14 +6,13 @@ import aws_cdk as cdk
 from aws_cdk import (
     Duration,
     RemovalPolicy,
-    SecretValue,
     Stack,
-    aws_apigateway as _api,
+    aws_apigatewayv2 as _api,
+    aws_apigatewayv2_integrations as _integrations,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
-    aws_s3 as _s3,
-    aws_secretsmanager as _secretsmanager
+    aws_s3 as _s3
 )
 
 from constructs import Construct
@@ -46,16 +45,6 @@ class FlumeStack(Stack):
             bucket_name = s3bucketname.value_as_string
         )
 
-    ### SECRET MANAGER ###
-
-        secret = _secretsmanager.Secret(
-            self, 'secret',
-            secret_object_value = {
-                "verify": SecretValue.unsafe_plain_text('<VERIFY>')
-            },
-            removal_policy = RemovalPolicy.DESTROY
-        )
-
     ### IAM ROLE ###
 
         role = _iam.Role(
@@ -81,19 +70,6 @@ class FlumeStack(Stack):
                 ]
             )
         )
-
-        role.add_to_policy(
-            _iam.PolicyStatement(
-                actions = [
-                    'apigateway:POST'
-                ],
-                resources = [
-                    '*'
-                ]
-            )
-        )
-
-        secret.grant_read(role)
 
     ### API LOG ROLE ###
 
@@ -126,7 +102,7 @@ class FlumeStack(Stack):
             environment = dict(
                 BUCKET = bucket.bucket_name,
                 PREFIX = 'logs',
-                SECRET = secret.secret_arn
+                VERIFY = '<VERIFY>'
             ),
             memory_size = 128,
             role = role
@@ -141,53 +117,22 @@ class FlumeStack(Stack):
 
     ### API GATEWAY ###
 
-        apilogs = _logs.LogGroup(
-            self, 'apilogs',
-            retention = _logs.RetentionDays.TWO_WEEKS,
-            removal_policy = RemovalPolicy.DESTROY
+        integration = _integrations.HttpLambdaIntegration(
+            'integration', flume
         )
 
-        api = _api.RestApi(
+        api = _api.HttpApi(
             self, 'api',
-            rest_api_name = apigatewayname.value_as_string,
-            endpoint_types = [_api.EndpointType.REGIONAL],
-            deploy_options = _api.StageOptions(
-                method_options={
-                    '/*/*': _api.MethodDeploymentOptions(
-                        throttling_rate_limit = 10000,
-                        throttling_burst_limit = 5000
-                    )
-                }
-            )
+            api_name = apigatewayname.value_as_string,
+            description = apigatewayname.value_as_string
         )
 
-        entity = api.root.add_resource('ingest')
-
-        integration = _api.LambdaIntegration(
-            flume,
-            proxy = True, 
-            integration_responses = [
-                _api.IntegrationResponse(
-                    status_code = '200',
-                    response_parameters = {
-                        'method.response.header.Access-Control-Allow-Origin': "'*'"
-                    }
-                )
-            ]
-        )
-
-        methd = entity.add_method(
-            'POST', 
-            integration,
-            api_key_required = False,
-            method_responses = [
-                _api.MethodResponse(
-                    status_code = '200',
-                    response_parameters = {
-                        'method.response.header.Access-Control-Allow-Origin': True
-                    }
-                )
-            ]
+        api.add_routes(
+            path = '/logs',
+            methods = [
+                _api.HttpMethod.POST
+            ],
+            integration = integration
         )
 
 ### FLUME APPLICATION ###

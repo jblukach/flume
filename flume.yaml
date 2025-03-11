@@ -8,15 +8,6 @@ Parameters:
     Default: flume
     Description: Existing S3 Bucket Name
 Resources:
-  secret4DA88516:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      SecretString: '{"verify":"<VERIFY>"}'
-      Tags:
-        - Key: GitHub
-          Value: https://github.com/jblukach/flume
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
   roleC7B7E775:
     Type: AWS::IAM::Role
     Properties:
@@ -49,15 +40,6 @@ Resources:
                 - - "arn:aws:s3:::"
                   - Ref: s3bucketname
                   - /*
-          - Action: apigateway:POST
-            Effect: Allow
-            Resource: "*"
-          - Action:
-              - secretsmanager:DescribeSecret
-              - secretsmanager:GetSecretValue
-            Effect: Allow
-            Resource:
-              Ref: secret4DA88516
         Version: "2012-10-17"
       PolicyName: roleDefaultPolicy7C980EBA
       Roles:
@@ -99,17 +81,9 @@ Resources:
 
               print(event)
 
-              secretmgr = boto3.client('secretsmanager')
-
-              secret = secretmgr.get_secret_value(
-                  SecretId = os.environ['SECRET']
-              )
-
-              verify = json.loads(secret['SecretString'])
-
               try:
 
-                  if event['queryStringParameters']['verify'] == verify['verify']:
+                  if event['queryStringParameters']['verify'] == os.environ['VERIFY']:
 
                       uniq = str(uuid.uuid4())
 
@@ -152,8 +126,7 @@ Resources:
           BUCKET:
             Ref: s3bucketname
           PREFIX: logs
-          SECRET:
-            Ref: secret4DA88516
+          VERIFY: <VERIFY>
       Handler: index.handler
       MemorySize: 128
       Role:
@@ -182,63 +155,37 @@ Resources:
           Value: https://github.com/jblukach/flume
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  apilogs9C0A78C8:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      Tags:
-        - Key: GitHub
-          Value: https://github.com/jblukach/flume
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
   apiC8550315:
-    Type: AWS::ApiGateway::RestApi
+    Type: AWS::ApiGatewayV2::Api
     Properties:
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
+      Description:
+        Ref: apigatewayname
       Name:
         Ref: apigatewayname
+      ProtocolType: HTTP
       Tags:
-        - Key: GitHub
-          Value: https://github.com/jblukach/flume
-  apiDeployment149F129487cdf7c624a1ffa559a8eeb5bb4e2d4f:
-    Type: AWS::ApiGateway::Deployment
+        GitHub: https://github.com/jblukach/flume
+  apiDefaultStage04B80AC9:
+    Type: AWS::ApiGatewayV2::Stage
     Properties:
-      Description: Automatically created by the RestApi construct
-      RestApiId:
+      ApiId:
         Ref: apiC8550315
-    DependsOn:
-      - apiingestPOSTE30E20E6
-      - apiingest6BBF5555
-  apiDeploymentStageprod896C8101:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      DeploymentId:
-        Ref: apiDeployment149F129487cdf7c624a1ffa559a8eeb5bb4e2d4f
-      MethodSettings:
-        - DataTraceEnabled: false
-          HttpMethod: "*"
-          ResourcePath: /*
-          ThrottlingBurstLimit: 5000
-          ThrottlingRateLimit: 10000
-      RestApiId:
-        Ref: apiC8550315
-      StageName: prod
+      AutoDeploy: true
+      StageName: $default
       Tags:
-        - Key: GitHub
-          Value: https://github.com/jblukach/flume
-  apiingest6BBF5555:
-    Type: AWS::ApiGateway::Resource
+        GitHub: https://github.com/jblukach/flume
+  apiPOSTlogsintegrationE991E333:
+    Type: AWS::ApiGatewayV2::Integration
     Properties:
-      ParentId:
+      ApiId:
+        Ref: apiC8550315
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
         Fn::GetAtt:
-          - apiC8550315
-          - RootResourceId
-      PathPart: ingest
-      RestApiId:
-        Ref: apiC8550315
-  apiingestPOSTApiPermissionFlumeStackapiA7D583D9POSTingestAEEC0355:
+          - flume9B71057B
+          - Arn
+      PayloadFormatVersion: "2.0"
+  apiPOSTlogsintegrationPermission11549B75:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
@@ -254,65 +201,17 @@ Resources:
             - Ref: AWS::AccountId
             - ":"
             - Ref: apiC8550315
-            - /
-            - Ref: apiDeploymentStageprod896C8101
-            - /POST/ingest
-  apiingestPOSTApiPermissionTestFlumeStackapiA7D583D9POSTingest2600D5C6:
-    Type: AWS::Lambda::Permission
+            - /*/*/logs
+  apiPOSTlogs82DE9661:
+    Type: AWS::ApiGatewayV2::Route
     Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Fn::GetAtt:
-          - flume9B71057B
-          - Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Join:
-          - ""
-          - - "arn:aws:execute-api:us-east-1:"
-            - Ref: AWS::AccountId
-            - ":"
-            - Ref: apiC8550315
-            - /test-invoke-stage/POST/ingest
-  apiingestPOSTE30E20E6:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      ApiKeyRequired: false
+      ApiId:
+        Ref: apiC8550315
       AuthorizationType: NONE
-      HttpMethod: POST
-      Integration:
-        IntegrationHttpMethod: POST
-        IntegrationResponses:
-          - ResponseParameters:
-              method.response.header.Access-Control-Allow-Origin: "'*'"
-            StatusCode: "200"
-        Type: AWS_PROXY
-        Uri:
-          Fn::Join:
-            - ""
-            - - arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/
-              - Fn::GetAtt:
-                  - flume9B71057B
-                  - Arn
-              - /invocations
-      MethodResponses:
-        - ResponseParameters:
-            method.response.header.Access-Control-Allow-Origin: true
-          StatusCode: "200"
-      ResourceId:
-        Ref: apiingest6BBF5555
-      RestApiId:
-        Ref: apiC8550315
-Outputs:
-  apiEndpoint9349E63C:
-    Value:
-      Fn::Join:
-        - ""
-        - - https://
-          - Ref: apiC8550315
-          - .execute-api.us-east-1.
-          - Ref: AWS::URLSuffix
-          - /
-          - Ref: apiDeploymentStageprod896C8101
-          - /
+      RouteKey: POST /logs
+      Target:
+        Fn::Join:
+          - ""
+          - - integrations/
+            - Ref: apiPOSTlogsintegrationE991E333
 

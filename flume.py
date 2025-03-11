@@ -9,17 +9,9 @@ def handler(event, context):
 
     print(event)
 
-    secretmgr = boto3.client('secretsmanager')
-
-    secret = secretmgr.get_secret_value(
-        SecretId = os.environ['SECRET']
-    )
-
-    verify = json.loads(secret['SecretString'])
-
     try:
 
-        if event['queryStringParameters']['verify'] == verify['verify']:
+        if event['queryStringParameters']['verify'] == os.environ['VERIFY']:
 
             uniq = str(uuid.uuid4())
 
