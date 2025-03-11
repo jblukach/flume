@@ -38,6 +38,14 @@ class FlumeStack(Stack):
             description = 'Existing S3 Bucket Name'
         )
 
+        verifytokenvalue = cdk.CfnParameter(
+            self,
+            'verifytokenvalue',
+            default = '<VERIFY>',
+            type = 'String',
+            description = 'Set Unique Verification Value'
+        )
+
     ### S3 BUCKET ###
 
         bucket = _s3.Bucket.from_bucket_name(
@@ -102,7 +110,7 @@ class FlumeStack(Stack):
             environment = dict(
                 BUCKET = bucket.bucket_name,
                 PREFIX = 'logs',
-                VERIFY = '<VERIFY>'
+                VERIFY = verifytokenvalue.value_as_string
             ),
             memory_size = 128,
             role = role

@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Default: flume
     Description: Existing S3 Bucket Name
+  verifytokenvalue:
+    Type: String
+    Default: <VERIFY>
+    Description: Set Unique Verification Value
 Resources:
   roleC7B7E775:
     Type: AWS::IAM::Role
@@ -126,7 +130,8 @@ Resources:
           BUCKET:
             Ref: s3bucketname
           PREFIX: logs
-          VERIFY: <VERIFY>
+          VERIFY:
+            Ref: verifytokenvalue
       Handler: index.handler
       MemorySize: 128
       Role:

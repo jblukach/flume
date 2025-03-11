@@ -14,9 +14,9 @@ What happens when Infrastructure as Code (IaC) is all written in a specific tech
 4. Stack Name
 5. API Gateway Name
 6. Existing S3 Bucket Name
-7. Add Tags
-8. Deploy CloudFormation
-9. [Change Verify Token](https://github.com/jblukach/flume/blob/main/app.py#L105C27-L105C35)
+7. Set Unique Verification Value
+8. Add Tags
+9. Deploy CloudFormation
 
 ### Broker URL
 
