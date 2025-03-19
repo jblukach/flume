@@ -1,9 +1,17 @@
+import base64
 import boto3
 import datetime
 import gzip
 import json
 import os
 import uuid
+
+def decoder(data):
+    try:
+        data = base64.b64decode(data).decode('utf-8')
+    except:
+        pass
+    return data
 
 def handler(event, context):
 
@@ -14,9 +22,10 @@ def handler(event, context):
         if event['queryStringParameters']['verify'] == os.environ['VERIFY']:
 
             uniq = str(uuid.uuid4())
+            data = decoder(event['body'])
 
             with gzip.open('/tmp/'+uniq+'.json.gz', 'wb') as g:
-                g.write((str(event)+str('\n')).encode())
+                g.write((str(data)+str('\n')).encode())
             g.close()
 
             year = datetime.datetime.now().year
