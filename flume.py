@@ -15,12 +15,16 @@ def handler(event, context):
 
             uniq = str(uuid.uuid4())
 
-            data = {}
-            data['received'] = str(datetime.datetime.now().isoformat())+'Z'
-            data['event'] = event['body']
+            if isinstance(event['body'], str):
+                data = json.loads(event['body'])
+            else:
+                data = event['body']
+
+            now = datetime.datetime.now()
+            data['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]+'+00:00'
 
             with gzip.open('/tmp/'+uniq+'.json.gz', 'wb') as g:
-                g.write((str(data)+str('\n')).encode())
+                g.write(json.dumps(data).encode())
             g.close()
 
             year = datetime.datetime.now().year

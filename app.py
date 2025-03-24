@@ -33,7 +33,7 @@ class FlumeStack(Stack):
         s3bucketname = cdk.CfnParameter(
             self,
             's3bucketname',
-            default = 'flume',
+            default = 'logflume',
             type = 'String',
             description = 'Existing S3 Bucket Name'
         )

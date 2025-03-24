@@ -5,13 +5,10 @@ headers = {
     'Content-Type': 'application/json'
 }
 
-data = {}
-data['one'] = 'MISSISSIPPI'
-data['two'] = 'MISSISSIPPI'
-data['three'] = 'MISSISSIPPI'
+data = '{"one": "MISSISSIPPI", "two": "MISSISSIPPI", "three": "MISSISSIPPI"}'
 
 r = requests.post(
-    'https://wcthbj9pld.execute-api.us-east-1.amazonaws.com/logs?verify=<VERIFY>',
+    'https://1c3tvs3c52.execute-api.us-east-1.amazonaws.com/logs?verify=<VERIFY>',
     headers = headers,
     data = data
 )
